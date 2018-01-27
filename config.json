@@ -1,0 +1,24 @@
+{
+    "port": "9090",
+	"line": {
+		"channelSecret": "{channelSecret}",
+		"channelAccessToken": "{channelAccesToken}",
+		"pushTo": "{userID or groupID or roomID}"
+	},
+	"trello": {
+		"apiKey": "{apiKey}",
+		"token": "{token}",
+		"idList": "{idList}"
+	},
+	"dialogflow": {
+		"auth": "Bearer {auth string}"
+	},
+	"sshCredential": {
+		"fullChainPath": "/path/to/fullchain.pem",
+		"privateKeyPath": "/path/to/privkey.pem"
+	},
+	"replyMessageToStamp": {
+		"ID_2000002_48473": "{reply message}",
+		"ID_2000002_48436": "{reply message}"
+	}
+}
