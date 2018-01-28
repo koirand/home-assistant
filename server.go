@@ -133,20 +133,16 @@ func linePushHandler(w http.ResponseWriter, r *http.Request) {
 
 	message := r.FormValue("message")
 
-	channelSecret := os.Getenv("CHANNEL_SECRET")
-	channelAccessToken := os.Getenv("CHANNEL_ACCESS_TOKEN")
-
-	bot, err := linebot.New(channelSecret, channelAccessToken)
+	bot, err := linebot.New(config.Line.ChannelSecret, config.Line.ChannelAccessToken)
 	if err != nil {
 		log.Fatal("Faled to create bot instance")
 		return
 	}
 
 	// Push message
-	var toGroupID = config.Line.PushTo
 	if message != "" {
 		log.Println("\x1b[35m[Bot][Text]\x1b[0m ", message)
-		if _, err = bot.PushMessage(toGroupID, linebot.NewTextMessage(message)).Do(); err != nil {
+		if _, err = bot.PushMessage(config.Line.PushTo, linebot.NewTextMessage(message)).Do(); err != nil {
 			log.Print(err)
 			return
 		}
