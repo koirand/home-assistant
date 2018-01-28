@@ -11,16 +11,16 @@ import (
 )
 
 type DialogflowResult struct {
-	Id			string					`json:"id"`
-	Timestamp	string					`json:"timestamp"`
-	Result		struct {
-		Parameters	struct {
-			Card	string				`json:"Card"`
-		}								`json:"Parameters"`
-		Fulfillment	struct {
-			Speech	string				`json:"speech"`
-		}								`json:"fulfillment"`
-	}									`json:"result"`
+	Id              string     `json:"id"`
+	Timestamp       string     `json:"timestamp"`
+	Result          struct {
+		Parameters  struct {
+			Card    string     `json:"Card"`
+		}                      `json:"Parameters"`
+		Fulfillment struct{
+			Speech  string     `json:"speech"`
+		}                      `json:"fulfillment"`
+	}                          `json:"result"`
 }
 
 func lineWebhookHandler(w http.ResponseWriter, r *http.Request) {
@@ -154,28 +154,28 @@ func linePushHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type configStruct struct {
-    Port					string  `json:"port"`
+    Port                    string  `json:"port"`
 	Line struct {
-		ChannelSecret		string	`json:"channelSecret"`
-		ChannelAccessToken	string	`json:"channelAccessToken"`
-		PushTo				string	`json:"pushTo"`
-	}								`json:"line"`
+		ChannelSecret       string  `json:"channelSecret"`
+		ChannelAccessToken  string  `json:"channelAccessToken"`
+		PushTo              string  `json:"pushTo"`
+	}                               `json:"line"`
 	Trello struct {
-		ApiKey				string	`json:"apiKey"`
-		Token				string	`json:"token"`
-		IdList				string	`json:"idList"`
-	}								`json:"trello"`
+		ApiKey              string  `json:"apiKey"`
+		Token               string  `json:"token"`
+		IdList              string  `json:"idList"`
+	}                               `json:"trello"`
 	Dialogflow struct {
-		Auth				string	`json:"auth"`
-	}								`json:"dialogflow"`
+		Auth                string  `json:"auth"`
+	}                               `json:"dialogflow"`
 	SshCredential struct {
-		FullChainPath		string	`json:"fullChainPath"`
-		PrivateKeyPath		string	`json:"privateKeyPath"`
-	}								`json:"sshCredential"`
+		FullChainPath       string  `json:"fullChainPath"`
+		PrivateKeyPath      string  `json:"privateKeyPath"`
+	}                               `json:"sshCredential"`
 	ReplyMessageToStamp struct {
-		ID_2000002_48473	string	`json:"ID_2000002_48473"`
-		ID_2000002_48436	string	`json:"ID_2000002_48436"`
-	}								`json:"replyMessageToStamp"`
+		ID_2000002_48473    string  `json:"ID_2000002_48473"`
+		ID_2000002_48436    string  `json:"ID_2000002_48436"`
+	}                               `json:"replyMessageToStamp"`
 }
 
 var config configStruct
