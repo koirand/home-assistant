@@ -10,7 +10,7 @@ import (
 	"github.com/line/line-bot-sdk-go/linebot"
 )
 
-type DialogflowResult struct {
+type dialogFlowResult struct {
 	Id              string     `json:"id"`
 	Timestamp       string     `json:"timestamp"`
 	Result          struct {
@@ -55,55 +55,19 @@ func lineWebhookHandler(w http.ResponseWriter, r *http.Request) {
 			case *linebot.TextMessage:
 				log.Println("\x1b[32m[User][Text]\x1b[0m ", message.Text)
 
-				// Dialogflow
-				values := url.Values{}
-				values.Add("v", "20150910")
-				values.Add("lang", "ja")
-				values.Add("query", message.Text)
-				values.Add("sessionId", "12345")
-
-				// Send request to dialogflow
-				req, err := http.NewRequest("GET", "https://api.dialogflow.com/v1/query" + "?" + values.Encode(), nil)
+				// talkToDialogFlow
+				dialogFlowResult, err := talkToDialogFlow(message.Text)
 				if err != nil {
 					log.Fatal(err)
-					return
 				}
-				req.Header.Set("Authorization", config.Dialogflow.Auth)
-				client := new(http.Client)
-				res, err := client.Do(req)
-				if err != nil {
-					log.Fatal(err)
-					return
-				}
-
-				// Parse response
-				body, err := ioutil.ReadAll(res.Body)
-				if err != nil {
-					log.Fatal(err)
-					return
-				}
-				var dialogFlowResult DialogflowResult
-				if err := json.Unmarshal(body, &dialogFlowResult); err != nil {
-					log.Fatal(err)
-					return
-				}
+				replyMessage = dialogFlowResult.Result.Fulfillment.Speech
 
 				// Add card to trello
 				if dialogFlowResult.Result.Parameters.Card != "" {
-					values = url.Values{}
-					values.Add("key", config.Trello.ApiKey)
-					values.Add("token", config.Trello.Token)
-					values.Add("idList", config.Trello.IdList)
-					values.Add("name", dialogFlowResult.Result.Parameters.Card)
-
-					_, err := http.PostForm("https://trello.com/1/cards", values)
-					if err != nil {
+					if err := addCardToTrello(dialogFlowResult.Result.Parameters.Card); err !=  nil {
 						log.Fatal(err)
-						return
 					}
-
 				}
-				replyMessage = dialogFlowResult.Result.Fulfillment.Speech
 
 			// Sticker message
 			case *linebot.StickerMessage:
@@ -117,7 +81,7 @@ func lineWebhookHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			// Reply message
+			// Reply
 			if replyMessage != "" {
 				log.Println("\x1b[35m[Bot][Text]\x1b[0m ", replyMessage)
 				if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(replyMessage)).Do(); err != nil {
@@ -142,7 +106,7 @@ func linePushHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Push message
+	// Push
 	var toGroupID = config.Line.PushTo
 	if message != "" {
 		log.Println("\x1b[35m[Bot][Text]\x1b[0m ", message)
@@ -151,6 +115,61 @@ func linePushHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+}
+
+func talkToDialogFlow (msg string) (dialogFlowResult, error) {
+
+	var r dialogFlowResult
+
+	// Dialogflow
+	values := url.Values{}
+	values.Add("v", "20150910")
+	values.Add("lang", "ja")
+	values.Add("query", msg)
+	values.Add("sessionId", "12345")
+
+	// Send request to dialogflow
+	req, err := http.NewRequest("GET", "https://api.dialogflow.com/v1/query" + "?" + values.Encode(), nil)
+	if err != nil {
+		return r, err
+	}
+
+	req.Header.Set("Authorization", config.Dialogflow.Auth)
+	client := new(http.Client)
+	res, err := client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+		return r, err
+	}
+
+	// Parse response
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Fatal(err)
+		return r, err
+	}
+	if err := json.Unmarshal(body, &r); err != nil {
+		log.Fatal(err)
+		return r, err
+	}
+
+	return r, nil
+}
+
+func addCardToTrello (cardName string) error {
+
+	values := url.Values{}
+	values.Add("key", config.Trello.ApiKey)
+	values.Add("token", config.Trello.Token)
+	values.Add("idList", config.Trello.IdList)
+	values.Add("name", cardName)
+
+	_, err := http.PostForm("https://trello.com/1/cards", values)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type configStruct struct {
