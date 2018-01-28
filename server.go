@@ -104,7 +104,6 @@ func linePushHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Push
-	var toGroupID = config.Line.PushTo
 	if message != "" {
 		log.Println("\x1b[35m[Bot][Text]\x1b[0m ", message)
 		if _, err = bot.PushMessage(config.Line.PushTo, linebot.NewTextMessage(message)).Do(); err != nil {
