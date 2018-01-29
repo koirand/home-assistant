@@ -13,6 +13,9 @@
 	"dialogflow": {
 		"auth": "Bearer {auth string}"
 	},
+	"openWeatherMap": {
+		"apiKey": "{apiKey}"
+	},
 	"sshCredential": {
 		"fullChainPath": "/path/to/fullchain.pem",
 		"privateKeyPath": "/path/to/privkey.pem"

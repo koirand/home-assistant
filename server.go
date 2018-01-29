@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"fmt"
+	"time"
 	"encoding/json"
 	"github.com/line/line-bot-sdk-go/linebot"
 )
@@ -16,6 +18,7 @@ type dialogFlowResult struct {
 	Result          struct {
 		Parameters  struct {
 			Card    string     `json:"Card"`
+			Weather string     `json:"Weather"`
 		}                      `json:"Parameters"`
 		Fulfillment struct{
 			Speech  string     `json:"speech"`
@@ -67,6 +70,11 @@ func lineWebhookHandler(w http.ResponseWriter, r *http.Request) {
 					if err := addCardToTrello(dialogFlowResult.Result.Parameters.Card); err !=  nil {
 						log.Fatal(err)
 					}
+				}
+
+				// Push weather forcast
+				if dialogFlowResult.Result.Parameters.Weather != "" {
+					pushWeatherForcast()
 				}
 
 			// Sticker message
@@ -168,6 +176,75 @@ func addCardToTrello (cardName string) error {
 	return nil
 }
 
+type weatherStruct struct {
+	List []struct {
+		Dt                  string   `json:"dt_txt"`
+		Main struct {
+			TempMax         float64  `json:"temp_max"`
+			TempMin         float64  `json:"temp_min"`
+		}                            `json:"main"`
+		Weather []struct {
+			Description     string   `json:"description"`
+			Icon            string   `json:"icon"`
+		}                            `json:"weather"`
+	}                                `json:"list"`
+}
+
+func pushWeatherForcast () {
+
+	baseUrl := "http://api.openweathermap.org/data/2.5/forecast"
+
+	resp, _ := http.Get(baseUrl + "?q=Tokyo,jp&units=metric&appid=" + config.OpenWeatherMap.ApiKey)
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	var weatherResult weatherStruct
+	if err := json.Unmarshal(body, &weatherResult); err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	// Push
+	bot, err := linebot.New(config.Line.ChannelSecret, config.Line.ChannelAccessToken)
+	if err != nil {
+		log.Println(config.Line.ChannelSecret)
+		log.Fatal("Faled to create bot instance")
+		return
+	}
+
+	log.Println("\x1b[35m[Bot][Weather]\x1b[0m ", weatherResult)
+
+	var dateTime time.Time
+	var message linebot.Message
+	var carouselColumnList []*linebot.CarouselColumn
+	var dateTimeFormat string = "2006-01-02 15:04:05"
+	for i := 0; i < 8; i++ {
+		dateTime, _ = time.Parse(dateTimeFormat, weatherResult.List[i].Dt)
+		dateTime = dateTime.In(time.FixedZone("Asia/Tokyo", 9*60*60))
+		carouselColumnList = append(
+			carouselColumnList,
+			linebot.NewCarouselColumn(
+				"https://openweathermap.org/img/w/" + weatherResult.List[i].Weather[0].Icon + ".png",
+				dateTime.Format(dateTimeFormat),
+				weatherResult.List[i].Weather[0].Description + " " +
+					fmt.Sprintf("%f", weatherResult.List[i].Main.TempMax) + "℃ / "+
+					fmt.Sprintf("%f", weatherResult.List[i].Main.TempMin) + "℃",
+				linebot.NewURITemplateAction("View detail", "https://openweathermap.org/city/1850144"),
+			),
+		)
+	}
+	message = linebot.NewTemplateMessage(
+		"Today weather forcast",
+		linebot.NewCarouselTemplate(carouselColumnList...),
+	)
+
+	if _, err := bot.PushMessage(config.Line.PushTo, message).Do(); err != nil {
+		log.Print(err)
+		return
+	}
+}
+
 type configStruct struct {
     Port                    string  `json:"port"`
 	Line struct {
@@ -183,6 +260,9 @@ type configStruct struct {
 	Dialogflow struct {
 		Auth                string  `json:"auth"`
 	}                               `json:"dialogflow"`
+	OpenWeatherMap struct {
+		ApiKey              string  `json:"apiKey"`
+	}                               `json:"OpenWeatherMap"`
 	SshCredential struct {
 		FullChainPath       string  `json:"fullChainPath"`
 		PrivateKeyPath      string  `json:"privateKeyPath"`
