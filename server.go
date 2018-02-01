@@ -23,6 +23,7 @@ type dialogFlowResult struct {
 		Fulfillment struct{
 			Speech  string     `json:"speech"`
 		}                      `json:"fulfillment"`
+		Score       float64    `json:"score"`
 	}                          `json:"result"`
 }
 
@@ -63,7 +64,9 @@ func lineWebhookHandler(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					log.Fatal(err)
 				}
-				replyMessage = dialogFlowResult.Result.Fulfillment.Speech
+				if dialogFlowResult.Result.Score >= config.DialogFlow.AcceptScore {
+					replyMessage = dialogFlowResult.Result.Fulfillment.Speech
+				}
 
 				// Add card to trello
 				if dialogFlowResult.Result.Parameters.Card != "" {
@@ -125,20 +128,20 @@ func talkToDialogFlow (msg string) (dialogFlowResult, error) {
 
 	var r dialogFlowResult
 
-	// Dialogflow
+	// DialogFlow
 	values := url.Values{}
 	values.Add("v", "20150910")
 	values.Add("lang", "ja")
 	values.Add("query", msg)
 	values.Add("sessionId", "12345")
 
-	// Send request to dialogflow
+	// Send request to DialogFlow
 	req, err := http.NewRequest("GET", "https://api.dialogflow.com/v1/query" + "?" + values.Encode(), nil)
 	if err != nil {
 		return r, err
 	}
 
-	req.Header.Set("Authorization", config.Dialogflow.Auth)
+	req.Header.Set("Authorization", config.DialogFlow.Auth)
 	client := new(http.Client)
 	res, err := client.Do(req)
 	if err != nil {
@@ -257,8 +260,9 @@ type configStruct struct {
 		Token               string  `json:"token"`
 		IdList              string  `json:"idList"`
 	}                               `json:"trello"`
-	Dialogflow struct {
+	DialogFlow struct {
 		Auth                string  `json:"auth"`
+		AcceptScore         float64 `json:"acceptScore"`
 	}                               `json:"dialogflow"`
 	OpenWeatherMap struct {
 		ApiKey              string  `json:"apiKey"`

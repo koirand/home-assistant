@@ -11,7 +11,8 @@
 		"idList": "{idList}"
 	},
 	"dialogflow": {
-		"auth": "Bearer {auth string}"
+		"auth": "Bearer {auth string}",
+    "acceptScore": 0.7
 	},
 	"openWeatherMap": {
 		"apiKey": "{apiKey}"
